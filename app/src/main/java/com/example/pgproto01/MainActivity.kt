@@ -29,6 +29,8 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.time.LocalDate
 import java.time.LocalTime
+import com.google.accompanist.pager.*
+import java.time.YearMonth
 
 data class Staff(
     val id: String = UUID.randomUUID().toString(),
@@ -61,8 +63,56 @@ fun convertRecordsToDaily(records: List<AttendanceRecord>): List<DailyAttendance
         daily
     }.sortedBy { it.date }
 }
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun MonthlyPager(records: List<AttendanceRecord>) {
+    val allMonths = remember(records) {
+        records
+            .map { YearMonth.from(it.timestamp) }
+            .distinct()
+            .sorted()
+    }
+
+    val pagerState = rememberPagerState()
+
+    Column {
+        if (allMonths.isNotEmpty()) {
+            val currentMonth = allMonths.getOrNull(pagerState.currentPage) ?: YearMonth.now()
+            Text(
+                "${currentMonth.year}年 ${currentMonth.monthValue}月",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(8.dp)
+            )
+
+            HorizontalPager(
+                count = allMonths.size,
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { pageIndex ->
+                val month = allMonths[pageIndex]
+                val daily = buildFullMonthDaily(records, month)
+                MonthlyAttendanceTable(daily)
+            }
+        } else {
+            Text("記録がありません", modifier = Modifier.padding(16.dp))
+        }
+    }
+}
+
+fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): List<DailyAttendance> {
+    val grouped = convertRecordsToDaily(records).associateBy { it.date }
+
+    return (1..yearMonth.lengthOfMonth()).map { day ->
+        val date = yearMonth.atDay(day)
+        grouped[date] ?: DailyAttendance(date = date)
+    }
+}
+
 @Composable
 fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
+    val commentState = remember { mutableStateMapOf<LocalDate, String>() }
+
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             Row(Modifier.fillMaxWidth().padding(8.dp)) {
@@ -73,17 +123,38 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
         }
 
         items(dailyRecords) { day ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(day.date.toString(), Modifier.weight(1f))
                 Text(day.clockIn?.toString() ?: "-", Modifier.weight(1f))
                 Text(day.breakOut?.toString() ?: "-", Modifier.weight(1f))
                 Text(day.breakIn?.toString() ?: "-", Modifier.weight(1f))
                 Text(day.clockOut?.toString() ?: "-", Modifier.weight(1f))
-                Text(day.comment, Modifier.weight(1f))
+
+                var text by remember { mutableStateOf(day.comment) }
+
+                TextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        day.comment = it
+                        commentState[day.date] = it
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp)
+                )
             }
         }
     }
 }
+
 
 enum class PunchType {
     IN,          // 出勤
@@ -354,9 +425,8 @@ fun StaffDetailScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            val dailyRecords = remember(records) { convertRecordsToDaily(records) }
+            MonthlyPager(records = records)
 
-            MonthlyAttendanceTable(dailyRecords = dailyRecords)
 
         }
     }
