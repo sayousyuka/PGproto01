@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -112,12 +113,30 @@ fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): 
 @Composable
 fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
     val commentState = remember { mutableStateMapOf<LocalDate, String>() }
+    val dateFormatter = DateTimeFormatter.ofPattern("MM/dd")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+    val columnWeights = listOf(1f, 1f, 1f, 1f, 1f, 2f) // コメント欄を広く
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
-            Row(Modifier.fillMaxWidth().padding(8.dp)) {
-                listOf("日付", "出勤", "外出", "戻り", "退勤", "コメント").forEach {
-                    Text(it, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+            Divider(thickness = 1.dp)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+            ) {
+                listOf("日付", "出勤", "外出", "戻り", "退勤", "コメント").forEachIndexed { i, title ->
+                    Box(
+                        modifier = Modifier
+                            .weight(columnWeights[i])
+                            .fillMaxHeight()
+                            .padding(4.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outline),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -126,34 +145,62 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .height(IntrinsicSize.Min)
             ) {
-                Text(day.date.toString(), Modifier.weight(1f))
-                Text(day.clockIn?.toString() ?: "-", Modifier.weight(1f))
-                Text(day.breakOut?.toString() ?: "-", Modifier.weight(1f))
-                Text(day.breakIn?.toString() ?: "-", Modifier.weight(1f))
-                Text(day.clockOut?.toString() ?: "-", Modifier.weight(1f))
-
-                var text by remember { mutableStateOf(day.comment) }
-
-                TextField(
-                    value = text,
-                    onValueChange = {
-                        text = it
-                        day.comment = it
-                        commentState[day.date] = it
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp)
+                val values = listOf(
+                    day.date.format(dateFormatter),
+                    day.clockIn?.format(timeFormatter) ?: "-",
+                    day.breakOut?.format(timeFormatter) ?: "-",
+                    day.breakIn?.format(timeFormatter) ?: "-",
+                    day.clockOut?.format(timeFormatter) ?: "-"
                 )
+
+                values.forEachIndexed { i, value ->
+                    Box(
+                        modifier = Modifier
+                            .weight(columnWeights[i])
+                            .fillMaxHeight()
+                            .border(1.dp, MaterialTheme.colorScheme.outline)
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(value, fontSize = 13.sp)
+                    }
+                }
+
+                // コメント欄だけ TextField に
+                var text by remember { mutableStateOf(day.comment) }
+                Box(
+                    modifier = Modifier
+                        .weight(columnWeights[5])
+                        .fillMaxHeight()
+                        .border(1.dp, MaterialTheme.colorScheme.outline)
+                        .padding(4.dp),
+                ) {
+                    TextField(
+                        value = text,
+                        onValueChange = {
+                            text = it
+                            day.comment = it
+                            commentState[day.date] = it
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        ),
+
+                        textStyle = LocalTextStyle.current.copy(fontSize = 12.sp)
+                    )
+                }
             }
         }
     }
 }
+
 
 
 enum class PunchType {
