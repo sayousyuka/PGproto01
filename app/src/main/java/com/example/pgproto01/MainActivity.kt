@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -110,6 +111,7 @@ fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): 
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
     val commentState = remember { mutableStateMapOf<LocalDate, String>() }
@@ -119,12 +121,13 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
     val columnWeights = listOf(1f, 1f, 1f, 1f, 1f, 2f) // コメント欄を広く
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
+        stickyHeader {
             Divider(thickness = 1.dp)
             Row(
                 Modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
+                    .background(MaterialTheme.colorScheme.surface) // 背景つけて見やすく
             ) {
                 listOf("日付", "出勤", "外出", "戻り", "退勤", "コメント").forEachIndexed { i, title ->
                     Box(
