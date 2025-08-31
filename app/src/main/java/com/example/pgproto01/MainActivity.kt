@@ -138,7 +138,7 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
                             .border(1.dp, MaterialTheme.colorScheme.outline),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -167,7 +167,7 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(value, fontSize = 13.sp)
+                        Text(value, fontSize = 15.sp)
                     }
                 }
 
@@ -189,14 +189,15 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .padding(0.dp)
+                            .heightIn(min = 40.dp), // 少し低めに
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface
                         ),
 
-                        textStyle = LocalTextStyle.current.copy(fontSize = 12.sp)
+                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                     )
                 }
             }
