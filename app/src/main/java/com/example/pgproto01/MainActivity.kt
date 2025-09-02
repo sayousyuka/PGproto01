@@ -33,6 +33,21 @@ import java.time.LocalDate
 import java.time.LocalTime
 import com.google.accompanist.pager.*
 import java.time.YearMonth
+// ▼ clickable修正用
+import androidx.compose.foundation.clickable
+
+// ▼ ViewModelの参照に必要
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pgproto01.viewmodel.PunchLogViewModel
+
+// ▼ ManualPunchDialog を定義済みなら、それを import
+import com.example.pgproto01.ui.component.ManualPunchDialog
+ // パスは調整してください
+
+// ▼ PunchLogエンティティの参照
+import com.example.pgproto01.data.model.PunchLog
+import com.example.pgproto01.data.model.PunchType
+
 
 data class Staff(
     val id: String = UUID.randomUUID().toString(),
@@ -67,7 +82,8 @@ fun convertRecordsToDaily(records: List<AttendanceRecord>): List<DailyAttendance
 }
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MonthlyPager(records: List<AttendanceRecord>) {
+fun MonthlyPager(records: List<AttendanceRecord>,
+                 onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
     val allMonths = remember(records) {
         records
             .map { YearMonth.from(it.timestamp) }
@@ -94,7 +110,7 @@ fun MonthlyPager(records: List<AttendanceRecord>) {
             ) { pageIndex ->
                 val month = allMonths[pageIndex]
                 val daily = buildFullMonthDaily(records, month)
-                MonthlyAttendanceTable(daily)
+                MonthlyAttendanceTable(daily, onManualPunchRequested) // ← 追加
             }
         } else {
             Text("記録がありません", modifier = Modifier.padding(16.dp))
@@ -113,7 +129,8 @@ fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
+fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
+                           onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
     val commentState = remember { mutableStateMapOf<LocalDate, String>() }
     val dateFormatter = DateTimeFormatter.ofPattern("MM/dd")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -159,17 +176,44 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
                 )
 
                 values.forEachIndexed { i, value ->
-                    Box(
-                        modifier = Modifier
-                            .weight(columnWeights[i])
-                            .fillMaxHeight()
-                            .border(1.dp, MaterialTheme.colorScheme.outline)
-                            .padding(4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(value, fontSize = 15.sp)
+                    if (value == "-") {
+                        Box(
+                            modifier = Modifier
+                                .weight(columnWeights[i])
+                                .fillMaxHeight()
+                                .border(1.dp, MaterialTheme.colorScheme.outline)
+                                .padding(4.dp)
+                                .clickable {
+                                    val type = when (i) {
+                                        1 -> PunchType.IN
+                                        2 -> PunchType.BREAK_OUT
+                                        3 -> PunchType.BREAK_IN
+                                        4 -> PunchType.OUT
+                                        else -> null
+                                    }
+                                    if (type != null) {
+                                        onManualPunchRequested(day.date, type)
+                                    }
+                                }
+                            ,
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("未", fontSize = 15.sp)
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .weight(columnWeights[i])
+                                .fillMaxHeight()
+                                .border(1.dp, MaterialTheme.colorScheme.outline)
+                                .padding(4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(value, fontSize = 15.sp)
+                        }
                     }
                 }
+
 
                 // コメント欄だけ TextField に
                 var text by remember { mutableStateOf(day.comment) }
@@ -207,18 +251,18 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>) {
 
 
 
-enum class PunchType {
-    IN,          // 出勤
-    BREAK_OUT,   // 外出
-    BREAK_IN,    // 戻り
-    OUT          // 退勤
-}
-fun PunchType.displayName(): String = when (this) {
-    PunchType.IN -> "出勤"
-    PunchType.OUT -> "退勤"
-    PunchType.BREAK_OUT -> "外出"
-    PunchType.BREAK_IN -> "戻り"
-}
+//enum class PunchType {
+//    IN,          // 出勤
+//    BREAK_OUT,   // 外出
+//    BREAK_IN,    // 戻り
+//    OUT          // 退勤
+//}
+//fun PunchType.displayName(): String = when (this) {
+//    PunchType.IN -> "出勤"
+//    PunchType.OUT -> "退勤"
+//    PunchType.BREAK_OUT -> "外出"
+//    PunchType.BREAK_IN -> "戻り"
+//}
 data class AttendanceRecord(
     val timestamp: LocalDateTime,
     val type: PunchType
@@ -391,6 +435,13 @@ fun StaffDetailScreen(
     var punchEnabled by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var pendingType by remember { mutableStateOf<PunchType?>(null) }
+    var manualDialogVisible by remember { mutableStateOf(false) }
+    var manualDialogDate by remember { mutableStateOf<LocalDate?>(null) }
+    var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
+    val punchLogViewModel: PunchLogViewModel = viewModel()
+
+
+
 
     fun requestPunch(type: PunchType) {
         if (!punchEnabled) return
@@ -476,7 +527,15 @@ fun StaffDetailScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            MonthlyPager(records = records)
+            MonthlyPager(
+                records = records,
+                onManualPunchRequested = { date, type ->
+                    manualDialogDate = date
+                    manualDialogType = type
+                    manualDialogVisible = true
+                }
+            )
+
 
 
         }
@@ -520,4 +579,32 @@ fun StaffDetailScreen(
             text = { Text("${staff.name}さんの${label}を記録します。") }
         )
     }
+    // 🔽 手動打刻ダイアログを表示
+    if (manualDialogVisible && manualDialogDate != null && manualDialogType != null) {
+        ManualPunchDialog(
+            date = manualDialogDate!!,
+            punchType = manualDialogType!!,
+            onDismiss = {
+                manualDialogVisible = false
+            },
+            onSave = { dateTime, comment ->
+
+                val staffLongId = staffId.toLongOrNull()
+                if (staffLongId != null && manualDialogType != null) {
+                    val punchLog = PunchLog(
+                        staffId = staffLongId,
+                        date = dateTime.toLocalDate().toString(),         // 例: "2025-09-02"
+                        time = dateTime.toLocalTime().toString().substring(0, 5), // 例: "13:20"
+                        type = manualDialogType!!.name,
+                        isManual = true
+                    )
+                    punchLogViewModel.insert(punchLog)
+                }
+
+                manualDialogVisible = false
+            }
+        )
+    }
+
+
 }

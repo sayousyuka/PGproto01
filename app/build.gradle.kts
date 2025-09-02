@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("kotlin-kapt") // ← これを必ず追加！
 }
 
 android {
@@ -57,4 +58,11 @@ dependencies {
 
     // java.time support
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
+
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1") // Kotlin Annotation Processing
+
+    // optional: コルーチン対応
+    implementation("androidx.room:room-ktx:2.6.1")
 }

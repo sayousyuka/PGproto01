@@ -22,4 +22,10 @@ interface PunchLogDao {
 
     @Query("SELECT * FROM punch_logs ORDER BY date DESC, time DESC")
     suspend fun getAllLogs(): List<PunchLog>
+
+    @Delete
+    suspend fun delete(log: PunchLog) // ← これを追加
+
+    @Query("DELETE FROM punch_logs")
+    suspend fun clearAll()            // ← これも追加
 }
