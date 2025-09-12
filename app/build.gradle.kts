@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("kotlin-kapt") // ← これを必ず追加！
+
 }
 
 android {
@@ -35,6 +36,11 @@ android {
 dependencies {
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2025.01.00")
+    val room_version = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$room_version")
+    kapt("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 

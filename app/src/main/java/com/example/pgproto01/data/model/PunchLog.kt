@@ -7,10 +7,11 @@ import androidx.room.PrimaryKey
 data class PunchLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val staffId: Long,
-    val date: String,
-    val time: String,
-    val type: String,
+    val date: String, // "2025-09-12"
+    val time: String, // "09:30"
+    val type: String, // "IN", "OUT" など
     val isManual: Boolean = false,
     val isDeleted: Boolean = false,
+    val comment: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

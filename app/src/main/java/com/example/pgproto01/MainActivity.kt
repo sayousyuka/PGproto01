@@ -198,7 +198,7 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
                             ,
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("未", fontSize = 15.sp)
+                            Text("-", fontSize = 15.sp)
                         }
                     } else {
                         Box(

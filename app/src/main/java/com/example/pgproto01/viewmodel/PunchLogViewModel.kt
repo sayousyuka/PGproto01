@@ -49,6 +49,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
                 time = dateTime.toLocalTime().toString().substring(0, 5), // "13:45"
                 type = type.name,
                 isManual = true
+                comment = comment  // ← これを追加
                 // 💡 comment は PunchLog に存在しないので未使用！
             )
             punchLogDao.insert(log)
