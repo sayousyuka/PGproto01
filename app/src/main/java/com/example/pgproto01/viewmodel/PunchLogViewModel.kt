@@ -75,4 +75,8 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
             punchLogDao.clearAll()
         }
     }
+    fun getPunchLogsForStaff(staffId: Long): Flow<List<PunchLog>> {
+        return punchLogDao.getByStaffId(staffId)
+    }
+
 }

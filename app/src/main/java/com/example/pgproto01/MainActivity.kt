@@ -431,7 +431,16 @@ fun StaffDetailScreen(
     val scope = rememberCoroutineScope()
     var punchDone by remember { mutableStateOf(false) }
     val staff = remember(staffId) { InMemoryRepository.findStaff(staffId) }
-    val records = remember(staffId) { InMemoryRepository.getRecords(staffId) }
+    val staffLongId = staffId.toLongOrNull() ?: return // staffId が不正なら早期リターン
+    val logs by punchLogViewModel.getPunchLogsForStaff(staffLongId).collectAsState(initial = emptyList())
+    val records = logs.map {
+        AttendanceRecord(
+            timestamp = LocalDateTime.parse("${it.date}T${it.time}"),
+            type = PunchType.valueOf(it.type)
+        )
+    }
+
+//    staffId) }
     var punchEnabled by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var pendingType by remember { mutableStateOf<PunchType?>(null) }
@@ -526,15 +535,21 @@ fun StaffDetailScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 fontWeight = FontWeight.SemiBold
             )
-
             MonthlyPager(
                 records = records,
                 onManualPunchRequested = { date, type ->
-                    manualDialogDate = date
-                    manualDialogType = type
-                    manualDialogVisible = true
+                    punchLogViewModel.openManualDialog(date, type)
                 }
             )
+
+//            MonthlyPager(
+//                records = records,
+//                onManualPunchRequested = { date, type ->
+//                    manualDialogDate = date
+//                    manualDialogType = type
+//                    manualDialogVisible = true
+//                }
+//            )
 
 
 
