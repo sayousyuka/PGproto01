@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.flow.Flow
+
 
 class PunchLogViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
@@ -48,7 +50,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
                 date = dateTime.toLocalDate().toString(),         // "2025-09-02"
                 time = dateTime.toLocalTime().toString().substring(0, 5), // "13:45"
                 type = type.name,
-                isManual = true
+                isManual = true,
                 comment = comment  // ← これを追加
                 // 💡 comment は PunchLog に存在しないので未使用！
             )

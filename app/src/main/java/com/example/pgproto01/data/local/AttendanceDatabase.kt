@@ -3,7 +3,7 @@ package com.example.pgproto01.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.pgproto01.data.model.PunchLog
-import com.example.pgproto01.data.dao.PunchLogDao
+import com.example.pgproto01.data.model.PunchLogDao
 
 @Database(
     entities = [PunchLog::class],

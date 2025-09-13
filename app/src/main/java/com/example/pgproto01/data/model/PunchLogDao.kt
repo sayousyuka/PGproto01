@@ -1,11 +1,16 @@
 package com.example.pgproto01.data.model
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
+
 
 @Dao
 interface PunchLogDao {
     @Insert
     suspend fun insert(log: PunchLog)
+
+    @Delete
+    suspend fun delete(log: PunchLog)  // ✅ これを追加！
 
     @Query("SELECT * FROM punch_logs WHERE staffId = :staffId ORDER BY date, time")
     fun getByStaffId(staffId: Long): Flow<List<PunchLog>>

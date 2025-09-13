@@ -428,11 +428,15 @@ fun StaffDetailScreen(
     onBack: () -> Unit,
     onPunched: () -> Unit
 ) {
+    val punchLogViewModel: PunchLogViewModel = viewModel()
     val scope = rememberCoroutineScope()
     var punchDone by remember { mutableStateOf(false) }
     val staff = remember(staffId) { InMemoryRepository.findStaff(staffId) }
     val staffLongId = staffId.toLongOrNull() ?: return // staffId が不正なら早期リターン
-    val logs by punchLogViewModel.getPunchLogsForStaff(staffLongId).collectAsState(initial = emptyList())
+    val logs: List<PunchLog> by punchLogViewModel
+        .getPunchLogsForStaff(staffLongId)
+        .collectAsState(initial = emptyList())
+
     val records = logs.map {
         AttendanceRecord(
             timestamp = LocalDateTime.parse("${it.date}T${it.time}"),
@@ -447,7 +451,7 @@ fun StaffDetailScreen(
     var manualDialogVisible by remember { mutableStateOf(false) }
     var manualDialogDate by remember { mutableStateOf<LocalDate?>(null) }
     var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
-    val punchLogViewModel: PunchLogViewModel = viewModel()
+
 
 
 
