@@ -47,8 +47,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             val log = PunchLog(
                 staffId = staffId,
-                date = dateTime.toLocalDate().toString(),         // "2025-09-02"
-                time = dateTime.toLocalTime().toString().substring(0, 5), // "13:45"
+                timestamp = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 type = type.name,
                 isManual = true,
                 comment = comment  // ← これを追加
