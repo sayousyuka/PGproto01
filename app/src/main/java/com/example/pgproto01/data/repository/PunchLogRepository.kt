@@ -10,7 +10,7 @@ class PunchLogRepository(private val dao: PunchLogDao) {
         dao.insert(log)
     }
 
-    fun getPunchLogsForStaff(staffId: Long): Flow<List<PunchLog>> {
+    fun getPunchLogsForStaff(staffId: String): Flow<List<PunchLog>> {
         return dao.getByStaffId(staffId)
     }
 

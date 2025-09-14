@@ -43,7 +43,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ✅ 手動打刻の保存
-    fun insertManualPunch(staffId: Long, dateTime: LocalDateTime, type: PunchType, comment: String) {
+    fun insertManualPunch(staffId: String, dateTime: LocalDateTime, type: PunchType, comment: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val log = PunchLog(
                 staffId = staffId,
@@ -77,8 +77,9 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
             punchLogDao.clearAll()
         }
     }
-    fun getPunchLogsForStaff(staffId: Long): Flow<List<PunchLog>> {
+    fun getPunchLogsForStaff(staffId: String): Flow<List<PunchLog>> {
         return punchLogDao.getByStaffId(staffId)
     }
+
 
 }

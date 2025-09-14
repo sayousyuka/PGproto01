@@ -49,6 +49,8 @@ import com.example.pgproto01.data.model.PunchLog
 import com.example.pgproto01.data.model.PunchType
 
 
+
+
 data class Staff(
     val id: String = UUID.randomUUID().toString(),
     val name: String
@@ -432,17 +434,26 @@ fun StaffDetailScreen(
     val scope = rememberCoroutineScope()
     var punchDone by remember { mutableStateOf(false) }
     val staff = remember(staffId) { InMemoryRepository.findStaff(staffId) }
-    val staffLongId = staffId.toLongOrNull() ?: return // staffId が不正なら早期リターン
+//    val staffLongId = staffId.toLongOrNull() ?: return // staffId が不正なら早期リターン
     val logs: List<PunchLog> by punchLogViewModel
-        .getPunchLogsForStaff(staffLongId)
+        .getPunchLogsForStaff(staffId)  // ← 直接渡せる
         .collectAsState(initial = emptyList())
+
+//    val records = logs.map {
+//        AttendanceRecord(
+//            timestamp = LocalDateTime.parse("${it.date}T${it.time}"),
+//            type = PunchType.valueOf(it.type)
+//        )
+//    }
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
     val records = logs.map {
         AttendanceRecord(
-            timestamp = LocalDateTime.parse("${it.date}T${it.time}"),
+            timestamp = LocalDateTime.parse("${it.date}T${it.time}", formatter),
             type = PunchType.valueOf(it.type)
         )
     }
+
 
 //    staffId) }
     var punchEnabled by remember { mutableStateOf(true) }
@@ -569,13 +580,25 @@ fun StaffDetailScreen(
                     onClick = {
                         punchEnabled = false
                         punchDone = true
-                        InMemoryRepository.addRecord(
-                            staffId,
-                            AttendanceRecord(
-                                timestamp = LocalDateTime.now(),
-                                type = pendingType!!
+//                        InMemoryRepository.addRecord(
+//                            staffId,
+//                            AttendanceRecord(
+//                                timestamp = LocalDateTime.now(),
+//                                type = pendingType!!
+//                            )
+//                        )
+                        scope.launch {
+                            val now = LocalDateTime.now()
+                            val punchLog = PunchLog(
+                                staffId = staffId,
+                                date = now.toLocalDate().toString(),          // "2025-09-14"
+                                time = now.toLocalTime().toString().substring(0, 5), // "HH:mm"
+                                type = pendingType!!.name,
+                                isManual = false
                             )
-                        )
+                            punchLogViewModel.insert(punchLog)   // ← DBに保存
+                        }
+
                         showDialog = false
                         pendingType = null
 
@@ -608,17 +631,17 @@ fun StaffDetailScreen(
             },
             onSave = { dateTime, comment ->
 
-                val staffLongId = staffId.toLongOrNull()
-                if (staffLongId != null && manualDialogType != null) {
+                if (manualDialogType != null) {
                     val punchLog = PunchLog(
-                        staffId = staffLongId,
-                        date = dateTime.toLocalDate().toString(),         // 例: "2025-09-02"
-                        time = dateTime.toLocalTime().toString().substring(0, 5), // 例: "13:20"
+                        staffId = staffId,
+                        date = dateTime.toLocalDate().toString(),
+                        time = dateTime.toLocalTime().toString().substring(0, 5),
                         type = manualDialogType!!.name,
                         isManual = true
                     )
                     punchLogViewModel.insert(punchLog)
                 }
+
 
                 manualDialogVisible = false
             }
