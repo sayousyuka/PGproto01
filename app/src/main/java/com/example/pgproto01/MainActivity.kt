@@ -48,6 +48,10 @@ import com.example.pgproto01.ui.component.ManualPunchDialog
 import com.example.pgproto01.data.model.PunchLog
 import com.example.pgproto01.data.model.PunchType
 
+import java.time.Instant
+import java.time.ZoneId
+
+
 
 
 
@@ -448,11 +452,16 @@ fun StaffDetailScreen(
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
     val records = logs.map {
+        val dateTime = Instant.ofEpochSecond(it.timestamp)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+
         AttendanceRecord(
-            timestamp = LocalDateTime.parse("${it.date}T${it.time}", formatter),
+            timestamp = dateTime,
             type = PunchType.valueOf(it.type)
         )
     }
+
 
 
 //    staffId) }
@@ -589,14 +598,16 @@ fun StaffDetailScreen(
 //                        )
                         scope.launch {
                             val now = LocalDateTime.now()
+                            val epoch = now.atZone(ZoneId.systemDefault()).toEpochSecond()
+
                             val punchLog = PunchLog(
                                 staffId = staffId,
-                                date = now.toLocalDate().toString(),          // "2025-09-14"
-                                time = now.toLocalTime().toString().substring(0, 5), // "HH:mm"
+                                timestamp = epoch,         // ← Longで保存
                                 type = pendingType!!.name,
                                 isManual = false
                             )
-                            punchLogViewModel.insert(punchLog)   // ← DBに保存
+                            punchLogViewModel.insert(punchLog)
+                            // ← DBに保存
                         }
 
                         showDialog = false
@@ -632,14 +643,18 @@ fun StaffDetailScreen(
             onSave = { dateTime, comment ->
 
                 if (manualDialogType != null) {
+                    val epoch = dateTime.atZone(ZoneId.systemDefault()).toEpochSecond()
+
                     val punchLog = PunchLog(
                         staffId = staffId,
-                        date = dateTime.toLocalDate().toString(),
-                        time = dateTime.toLocalTime().toString().substring(0, 5),
+                        timestamp = epoch,       // ← Longで保存
                         type = manualDialogType!!.name,
-                        isManual = true
+                        isManual = true,
+                        comment = comment        // ← コメントがあるならここに
                     )
                     punchLogViewModel.insert(punchLog)
+
+
                 }
 
 
