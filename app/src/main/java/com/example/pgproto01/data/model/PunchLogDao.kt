@@ -18,6 +18,9 @@ interface PunchLogDao {
 
     @Query("DELETE FROM punch_logs")
     suspend fun clearAll()
+
+    @Query("SELECT * FROM punch_logs")
+    suspend fun getAll(): List<PunchLog>
 }
 
 

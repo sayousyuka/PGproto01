@@ -62,6 +62,10 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     fun insert(log: PunchLog) {
         viewModelScope.launch(Dispatchers.IO) {
             punchLogDao.insert(log)
+
+            // 👇 保存後に全件取得してログ出力
+            val all = punchLogDao.getAll()
+            android.util.Log.d("PunchLogViewModel", "現在のDB内容: $all")
         }
     }
 

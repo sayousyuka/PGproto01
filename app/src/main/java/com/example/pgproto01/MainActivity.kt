@@ -274,28 +274,22 @@ data class AttendanceRecord(
     val type: PunchType
 )
 
+// スタッフ一覧だけ管理する
 object InMemoryRepository {
     val staffList = mutableStateListOf(
-        Staff(name = "山田 太郎"),
-        Staff(name = "佐藤 花子"),
-        Staff(name = "鈴木 次郎"),
-        Staff(name = "田中 三郎"),
-        Staff(name = "中村 四季"),
-        Staff(name = "高橋 桜"),
+        Staff(id = "1", name = "山田 太郎"),
+        Staff(id = "2", name = "佐藤 花子"),
+        Staff(id = "3", name = "鈴木 次郎"),
+        Staff(id = "4", name = "田中 三郎"),
+        Staff(id = "5", name = "中村 四季"),
+        Staff(id = "6", name = "高橋 桜"),
     )
 
-    private val records = mutableStateMapOf<String, SnapshotStateList<AttendanceRecord>>()
-
-    fun getRecords(staffId: String): SnapshotStateList<AttendanceRecord> {
-        return records.getOrPut(staffId) { mutableStateListOf() }
-    }
-
-    fun addRecord(staffId: String, record: AttendanceRecord) {
-        getRecords(staffId).add(0, record)
-    }
-
-    fun findStaff(staffId: String): Staff? = staffList.find { it.id == staffId }
+    // 余計なものは削除！記録はDBに任せる
+    fun findStaff(staffId: String): Staff? =
+        staffList.find { it.id == staffId }
 }
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -597,18 +591,20 @@ fun StaffDetailScreen(
 //                            )
 //                        )
                         scope.launch {
+                            val type = pendingType ?: return@launch  // nullなら何もせず終了
+
                             val now = LocalDateTime.now()
                             val epoch = now.atZone(ZoneId.systemDefault()).toEpochSecond()
 
                             val punchLog = PunchLog(
                                 staffId = staffId,
-                                timestamp = epoch,         // ← Longで保存
-                                type = pendingType!!.name,
+                                timestamp = epoch,
+                                type = type.name,
                                 isManual = false
                             )
                             punchLogViewModel.insert(punchLog)
-                            // ← DBに保存
                         }
+
 
                         showDialog = false
                         pendingType = null
