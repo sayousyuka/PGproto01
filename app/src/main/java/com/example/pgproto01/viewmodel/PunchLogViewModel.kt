@@ -60,6 +60,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
 
     // ✅ 既存の基本操作
     fun insert(log: PunchLog) {
+        android.util.Log.d("PunchLogViewModel", "📥 insert呼ばれた: $log")
         viewModelScope.launch(Dispatchers.IO) {
             punchLogDao.insert(log)
 

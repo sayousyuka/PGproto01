@@ -50,6 +50,7 @@ import com.example.pgproto01.data.model.PunchType
 
 import java.time.Instant
 import java.time.ZoneId
+import androidx.activity.viewModels
 
 
 
@@ -294,7 +295,10 @@ object InMemoryRepository {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { AttendanceApp() }
+
+        // ✅ ViewModelをActivityスコープで取得
+        val punchLogViewModel: PunchLogViewModel by viewModels()
+        setContent { AttendanceApp(punchLogViewModel = punchLogViewModel) }
     }
 }
 
@@ -581,6 +585,7 @@ fun StaffDetailScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        android.util.Log.d("StaffDetailScreen", "✅ OKボタン押された")
                         punchEnabled = false
                         punchDone = true
 //                        InMemoryRepository.addRecord(
@@ -602,6 +607,7 @@ fun StaffDetailScreen(
                                 type = type.name,
                                 isManual = false
                             )
+                            android.util.Log.d("StaffDetailScreen", "出勤ボタンで insert 呼び出し: $punchLog")
                             punchLogViewModel.insert(punchLog)
                         }
 
