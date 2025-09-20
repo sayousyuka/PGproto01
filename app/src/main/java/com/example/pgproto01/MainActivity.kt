@@ -298,12 +298,15 @@ class MainActivity : ComponentActivity() {
 
         // ✅ ViewModelをActivityスコープで取得
         val punchLogViewModel: PunchLogViewModel by viewModels()
-        setContent { AttendanceApp(punchLogViewModel = punchLogViewModel) }
+        // ⛳ 修正ポイント：AttendanceAppにViewModelを渡す！
+        setContent {
+            AttendanceApp(punchLogViewModel = punchLogViewModel)
+        }
     }
 }
 
 @Composable
-fun AttendanceApp() {
+fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追加
     val navController = rememberNavController()
     MaterialTheme {
         NavHost(navController = navController, startDestination = "home") {
@@ -322,6 +325,7 @@ fun AttendanceApp() {
                 val staffId = backStackEntry.arguments?.getString("staffId")!!
                 StaffDetailScreen(
                     staffId = staffId,
+                    punchLogViewModel = punchLogViewModel, // ← 渡す
                     onBack = { navController.popBackStack() },
                     onPunched = {
                         navController.popBackStack(route = "home", inclusive = false)
@@ -429,6 +433,7 @@ fun StaffCard(
 @Composable
 fun StaffDetailScreen(
     staffId: String,
+    punchLogViewModel: PunchLogViewModel, // ← 追加
     onBack: () -> Unit,
     onPunched: () -> Unit
 ) {
