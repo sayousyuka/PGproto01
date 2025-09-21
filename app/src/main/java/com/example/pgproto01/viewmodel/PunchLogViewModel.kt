@@ -10,11 +10,10 @@ import com.example.pgproto01.data.model.AppDatabase
 import com.example.pgproto01.data.model.PunchLog
 import com.example.pgproto01.data.model.PunchType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
-import kotlinx.coroutines.flow.Flow
-
 
 class PunchLogViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
@@ -30,16 +29,25 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     var manualDialogType by mutableStateOf<PunchType?>(null)
         private set
 
-    // ✅ ダイアログを開く
+    // ✅ 打刻ボタンの pendingType を管理
+    var pendingType by mutableStateOf<PunchType?>(null)
+        private set
+
+    fun setPendingType(type: PunchType?) {
+        pendingType = type
+    }
+
+    // ✅ 手動ダイアログ制御
     fun openManualDialog(date: LocalDate, type: PunchType) {
         manualDialogDate = date
         manualDialogType = type
         isManualDialogVisible = true
     }
 
-    // ✅ ダイアログを閉じる
     fun closeManualDialog() {
         isManualDialogVisible = false
+        manualDialogDate = null
+        manualDialogType = null
     }
 
     // ✅ 手動打刻の保存
@@ -50,21 +58,17 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
                 timestamp = dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
                 type = type.name,
                 isManual = true,
-                comment = comment  // ← これを追加
-                // 💡 comment は PunchLog に存在しないので未使用！
+                comment = comment
             )
             punchLogDao.insert(log)
         }
     }
 
-
-    // ✅ 既存の基本操作
+    // ✅ DB基本操作
     fun insert(log: PunchLog) {
-        android.util.Log.d("PunchLogViewModel", "📥 insert呼ばれた: $log")
+        android.util.Log.i("PunchLogViewModel", "📥 insert呼ばれた: $log")
         viewModelScope.launch(Dispatchers.IO) {
             punchLogDao.insert(log)
-
-            // 👇 保存後に全件取得してログ出力
             val all = punchLogDao.getAll()
             android.util.Log.d("PunchLogViewModel", "現在のDB内容: $all")
         }
@@ -81,9 +85,8 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
             punchLogDao.clearAll()
         }
     }
+
     fun getPunchLogsForStaff(staffId: String): Flow<List<PunchLog>> {
         return punchLogDao.getByStaffId(staffId)
     }
-
-
 }

@@ -437,7 +437,7 @@ fun StaffDetailScreen(
     onBack: () -> Unit,
     onPunched: () -> Unit
 ) {
-    val punchLogViewModel: PunchLogViewModel = viewModel()
+//    val punchLogViewModel: PunchLogViewModel = viewModel()
     val scope = rememberCoroutineScope()
     var punchDone by remember { mutableStateOf(false) }
     val staff = remember(staffId) { InMemoryRepository.findStaff(staffId) }
@@ -470,7 +470,8 @@ fun StaffDetailScreen(
 //    staffId) }
     var punchEnabled by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
-    var pendingType by remember { mutableStateOf<PunchType?>(null) }
+    val pendingType = punchLogViewModel.pendingType
+
     var manualDialogVisible by remember { mutableStateOf(false) }
     var manualDialogDate by remember { mutableStateOf<LocalDate?>(null) }
     var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
@@ -481,7 +482,7 @@ fun StaffDetailScreen(
 
     fun requestPunch(type: PunchType) {
         if (!punchEnabled) return
-        pendingType = type
+        punchLogViewModel.setPendingType(type)
         showDialog = true
     }
 
@@ -593,32 +594,39 @@ fun StaffDetailScreen(
                         android.util.Log.d("StaffDetailScreen", "✅ OKボタン押された")
                         punchEnabled = false
                         punchDone = true
-//                        InMemoryRepository.addRecord(
-//                            staffId,
-//                            AttendanceRecord(
-//                                timestamp = LocalDateTime.now(),
-//                                type = pendingType!!
-//                            )
-//                        )
+
+                        android.util.Log.d("StaffDetailScreen", "💡 punchLogViewModel = $punchLogViewModel")
+                        android.util.Log.d("StaffDetailScreen", "💡 staffId = $staffId")
+
                         scope.launch {
-                            val type = pendingType ?: return@launch  // nullなら何もせず終了
+                            android.util.Log.d("StaffDetailScreen", "📍 scope.launch に入った")
+                            try {
+                                val type = pendingType ?: run {
+                                    android.util.Log.e("StaffDetailScreen", "❗ pendingType が null")
+                                    return@launch
+                                }
 
-                            val now = LocalDateTime.now()
-                            val epoch = now.atZone(ZoneId.systemDefault()).toEpochSecond()
+                                val now = LocalDateTime.now()
+                                val epoch = now.atZone(ZoneId.systemDefault()).toEpochSecond()
 
-                            val punchLog = PunchLog(
-                                staffId = staffId,
-                                timestamp = epoch,
-                                type = type.name,
-                                isManual = false
-                            )
-                            android.util.Log.d("StaffDetailScreen", "出勤ボタンで insert 呼び出し: $punchLog")
-                            punchLogViewModel.insert(punchLog)
+                                val punchLog = PunchLog(
+                                    staffId = staffId,
+                                    timestamp = epoch,
+                                    type = type.name,
+                                    isManual = false
+                                )
+                                android.util.Log.d("StaffDetailScreen", "出勤ボタンで insert 呼び出し: $punchLog")
+
+                                punchLogViewModel.insert(punchLog)
+                            } catch (e: Exception) {
+                                android.util.Log.e("StaffDetailScreen", "❌ insert 中にエラー", e)
+                            }
                         }
 
 
+
                         showDialog = false
-                        pendingType = null
+                        punchLogViewModel.setPendingType(null)
 
                         scope.launch {
                             delay(150)
@@ -632,7 +640,7 @@ fun StaffDetailScreen(
             dismissButton = {
                 TextButton(onClick = {
                     showDialog = false
-                    pendingType = null
+                    punchLogViewModel.setPendingType(null)
                 }) { Text("キャンセル") }
             },
             title = { Text("確認") },
