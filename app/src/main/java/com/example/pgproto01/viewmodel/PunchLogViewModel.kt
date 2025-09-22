@@ -33,7 +33,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     var pendingType by mutableStateOf<PunchType?>(null)
         private set
 
-    fun setPendingType(type: PunchType?) {
+    fun updatePendingType(type: PunchType?) {
         pendingType = type
     }
 

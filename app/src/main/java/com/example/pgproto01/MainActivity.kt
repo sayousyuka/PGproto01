@@ -482,7 +482,7 @@ fun StaffDetailScreen(
 
     fun requestPunch(type: PunchType) {
         if (!punchEnabled) return
-        punchLogViewModel.setPendingType(type)
+        punchLogViewModel.updatePendingType(type)
         showDialog = true
     }
 
@@ -626,7 +626,7 @@ fun StaffDetailScreen(
 
 
                         showDialog = false
-                        punchLogViewModel.setPendingType(null)
+                        punchLogViewModel.updatePendingType(null)
 
                         scope.launch {
                             delay(150)
@@ -640,7 +640,7 @@ fun StaffDetailScreen(
             dismissButton = {
                 TextButton(onClick = {
                     showDialog = false
-                    punchLogViewModel.setPendingType(null)
+                    punchLogViewModel.updatePendingType(null)
                 }) { Text("キャンセル") }
             },
             title = { Text("確認") },
