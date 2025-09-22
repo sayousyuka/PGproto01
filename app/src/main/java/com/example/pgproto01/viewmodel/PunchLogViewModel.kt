@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.example.pgproto01.data.model.DailyComment
+
 
 class PunchLogViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
     private val punchLogDao = db.punchLogDao()
+    private val dailyCommentDao = db.dailyCommentDao()
 
     // ✅ ダイアログ制御用ステート
     var isManualDialogVisible by mutableStateOf(false)
@@ -88,5 +91,17 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
 
     fun getPunchLogsForStaff(staffId: String): Flow<List<PunchLog>> {
         return punchLogDao.getByStaffId(staffId)
+    }
+    // Flow を State に変換して UI で監視
+    fun getCommentForDay(staffId: String, date: LocalDate): Flow<DailyComment?> {
+        return dailyCommentDao.getCommentForDay(staffId, date.toString())
+    }
+
+    fun setComment(staffId: String, date: LocalDate, text: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            dailyCommentDao.insert(
+                DailyComment(staffId, date.toString(), text)
+            )
+        }
     }
 }

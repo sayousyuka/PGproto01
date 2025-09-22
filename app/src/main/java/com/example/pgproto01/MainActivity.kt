@@ -89,8 +89,11 @@ fun convertRecordsToDaily(records: List<AttendanceRecord>): List<DailyAttendance
 }
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MonthlyPager(records: List<AttendanceRecord>,
-                 onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
+fun MonthlyPager(
+    staffId: String,
+    punchLogViewModel: PunchLogViewModel,
+    records: List<AttendanceRecord>,
+    onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
     val allMonths = remember(records) {
         records
             .map { YearMonth.from(it.timestamp) }
@@ -117,7 +120,13 @@ fun MonthlyPager(records: List<AttendanceRecord>,
             ) { pageIndex ->
                 val month = allMonths[pageIndex]
                 val daily = buildFullMonthDaily(records, month)
-                MonthlyAttendanceTable(daily, onManualPunchRequested) // ← 追加
+                MonthlyAttendanceTable(
+                    staffId = staffId,                     // ← StaffDetailScreenから渡す必要あり
+                    dailyRecords = daily,
+                    punchLogViewModel = punchLogViewModel, // ← ViewModelを渡す
+                    onManualPunchRequested = onManualPunchRequested
+                )
+                // ← 追加
             }
         } else {
             Text("記録がありません", modifier = Modifier.padding(16.dp))
@@ -136,7 +145,9 @@ fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
+fun MonthlyAttendanceTable(staffId: String,
+                           dailyRecords: List<DailyAttendance>,
+                           punchLogViewModel: PunchLogViewModel,
                            onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
     val commentState = remember { mutableStateMapOf<LocalDate, String>() }
     val dateFormatter = DateTimeFormatter.ofPattern("MM/dd")
@@ -169,6 +180,10 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
         }
 
         items(dailyRecords) { day ->
+            val dailyComment by punchLogViewModel
+                .getCommentForDay(staffId, day.date)
+                .collectAsState(initial = null)
+
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -223,7 +238,9 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
 
 
                 // コメント欄だけ TextField に
-                var text by remember { mutableStateOf(day.comment) }
+                var text by remember(dailyComment) {
+                    mutableStateOf(dailyComment?.comment ?: "")
+                }
                 Box(
                     modifier = Modifier
                         .weight(columnWeights[5])
@@ -235,21 +252,20 @@ fun MonthlyAttendanceTable(dailyRecords: List<DailyAttendance>,
                         value = text,
                         onValueChange = {
                             text = it
-                            day.comment = it
-                            commentState[day.date] = it
+                            punchLogViewModel.setComment(staffId, day.date, it) // ← DBに保存
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(0.dp)
-                            .heightIn(min = 40.dp), // 少し低めに
+                            .heightIn(min = 40.dp),
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface
                         ),
-
                         textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
                     )
+
                 }
             }
         }
@@ -564,11 +580,14 @@ fun StaffDetailScreen(
                 fontWeight = FontWeight.SemiBold
             )
             MonthlyPager(
+                staffId = staffId,
+                punchLogViewModel = punchLogViewModel,
                 records = records,
                 onManualPunchRequested = { date, type ->
                     punchLogViewModel.openManualDialog(date, type)
                 }
             )
+
 
 //            MonthlyPager(
 //                records = records,

@@ -10,6 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(entities = [PunchLog::class], version = 2, exportSchema = false)  // ★ version 1 → 2
 abstract class AppDatabase : RoomDatabase() {
     abstract fun punchLogDao(): PunchLogDao
+    abstract fun dailyCommentDao(): DailyCommentDao // ← 追加
 
     companion object {
         @Volatile
