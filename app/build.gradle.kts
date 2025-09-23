@@ -71,5 +71,8 @@ dependencies {
     // java.time support
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.4") // FragmentActivity 用
+
 
 }

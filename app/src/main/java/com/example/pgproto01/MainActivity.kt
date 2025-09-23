@@ -52,6 +52,8 @@ import java.time.Instant
 import java.time.ZoneId
 import androidx.activity.viewModels
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 
 
 
@@ -155,7 +157,16 @@ fun MonthlyAttendanceTable(staffId: String,
 
     val columnWeights = listOf(1f, 1f, 1f, 1f, 1f, 2f) // コメント欄を広く
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    // ▼ 今日の行を探す
+    val today = LocalDate.now()
+    val initialIndex = dailyRecords.indexOfFirst { it.date == today }.coerceAtLeast(0)
+
+    // ▼ スクロール位置を今日に合わせる
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+
+    LazyColumn(
+        state = listState, // ← 追加！
+        modifier = Modifier.fillMaxSize()) {
         stickyHeader {
             Divider(thickness = 1.dp)
             Row(
@@ -584,7 +595,10 @@ fun StaffDetailScreen(
                 punchLogViewModel = punchLogViewModel,
                 records = records,
                 onManualPunchRequested = { date, type ->
-                    punchLogViewModel.openManualDialog(date, type)
+//                    punchLogViewModel.openManualDialog(date, type)
+                    manualDialogDate = date
+                    manualDialogType = type
+                    manualDialogVisible = true
                 }
             )
 
