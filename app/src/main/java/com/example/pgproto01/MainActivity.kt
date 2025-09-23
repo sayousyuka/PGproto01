@@ -342,7 +342,8 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
                     staff = InMemoryRepository.staffList,
                     onStaffClick = { staffId ->
                         navController.navigate("detail/$staffId")
-                    }
+                    },
+                    onSettingsClick = { navController.navigate("settings") } // ← 追加
                 )
             }
             composable(
@@ -359,6 +360,9 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
                     }
                 )
             }
+            composable("settings") {
+                SettingsScreen(navController = navController) // ← 設定画面
+            }
         }
     }
 }
@@ -367,7 +371,8 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
 @Composable
 fun HomeScreen(
     staff: List<Staff>,
-    onStaffClick: (String) -> Unit
+    onStaffClick: (String) -> Unit,
+    onSettingsClick: () -> Unit // ← 引数追加
 ) {
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
