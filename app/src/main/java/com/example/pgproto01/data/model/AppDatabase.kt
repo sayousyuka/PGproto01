@@ -7,7 +7,11 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [PunchLog::class], version = 2, exportSchema = false)  // ★ version 1 → 2
+@Database(
+    entities = [PunchLog::class, DailyComment::class], // ← 両方まとめる
+    version = 3, // ← 2 → 3 に上げる
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun punchLogDao(): PunchLogDao
     abstract fun dailyCommentDao(): DailyCommentDao // ← 追加
@@ -51,7 +55,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "punch_log_database"
                 )
-                    .addMigrations(MIGRATION_1_2)   // ★ Migrationを追加
+                    .fallbackToDestructiveMigration() // ← ここを追加
+                    //.addMigrations(MIGRATION_1_2)    // 開発中はコメントアウトしてOK
                     .build()
                 INSTANCE = instance
                 instance
