@@ -7,6 +7,6 @@ import androidx.room.PrimaryKey
 data class StaffEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val kana: String = "",
-    val isActive: Boolean = true
+    val kana: String? = null,    // 検索用のフリガナ（オプション）
+    val isActive: Boolean = true // 退職・休職時に false にできる
 )

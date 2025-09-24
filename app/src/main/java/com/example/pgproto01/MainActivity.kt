@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.attendance
 
 import android.os.Bundle
@@ -54,8 +56,10 @@ import androidx.activity.viewModels
 
 import androidx.compose.foundation.lazy.rememberLazyListState
 
+import com.example.attendance.ui.SettingsScreen
 
-
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 
 
 data class Staff(
@@ -385,7 +389,21 @@ fun HomeScreen(
     val timeText = now.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
     val dateText = now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd (E)"))
 
-    Scaffold { inner ->
+    Scaffold (
+        topBar = {   // ← ここを追加！
+            TopAppBar(
+                title = { Text("勤怠アプリ") },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "設定"
+                        )
+                    }
+                }
+            )
+        }
+    ){ inner ->
         Column(
             modifier = Modifier
                 .padding(inner)
