@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.attendance"
+    namespace = "com.example.pgproto01"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.attendance"
+        applicationId = "com.example.pgproto01"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

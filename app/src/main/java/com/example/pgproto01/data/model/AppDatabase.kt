@@ -8,13 +8,18 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [PunchLog::class, DailyComment::class], // ← 両方まとめる
-    version = 3, // ← 2 → 3 に上げる
+    entities = [
+        PunchLog::class,
+        DailyComment::class,
+        StaffEntity::class       // ← ★ 追加
+    ],
+    version = 4, // ← 1つバージョンを上げる（今 3 なら 4 に）
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun punchLogDao(): PunchLogDao
     abstract fun dailyCommentDao(): DailyCommentDao // ← 追加
+    abstract fun staffDao(): StaffDao    // ← ★ 追加
 
     companion object {
         @Volatile

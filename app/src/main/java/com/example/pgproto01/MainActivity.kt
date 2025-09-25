@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.attendance
+package com.example.pgproto01
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -60,6 +60,9 @@ import com.example.attendance.ui.SettingsScreen
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+//import com.example.pgproto01.ui.SettingsScreen
+import com.example.pgproto01.ui.StaffMasterScreen
+
 
 
 data class Staff(
@@ -367,6 +370,10 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
             composable("settings") {
                 SettingsScreen(navController = navController) // ← 設定画面
             }
+            composable("staffMaster") {
+                StaffMasterScreen(navController = navController)
+            }
+
         }
     }
 }
