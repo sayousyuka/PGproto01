@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 
 class StaffViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).staffDao()
@@ -18,6 +19,11 @@ class StaffViewModel(application: Application) : AndroidViewModel(application) {
     // FlowをStateFlowに変換してUIで簡単に扱えるようにする
     val staffList: StateFlow<List<StaffEntity>> =
         repo.getAll().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // 🔹 有効なスタッフだけを抽出した StateFlow
+    val activeStaffList: StateFlow<List<StaffEntity>> =
+        staffList.map { list -> list.filter { it.isActive } }
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun addStaff(name: String, kana: String? = null) {
         viewModelScope.launch {
@@ -36,4 +42,5 @@ class StaffViewModel(application: Application) : AndroidViewModel(application) {
             repo.delete(staff)
         }
     }
+
 }

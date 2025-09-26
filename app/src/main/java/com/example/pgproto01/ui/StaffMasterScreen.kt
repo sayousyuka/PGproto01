@@ -24,15 +24,16 @@ import com.example.pgproto01.data.model.StaffEntity
 import com.example.pgproto01.viewmodel.StaffViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StaffMasterScreen(
     navController: NavController,
     viewModel: StaffViewModel = viewModel()
 ) {
-    val staffList by viewModel.staffList.collectAsState() // ✅ 名前を合わせる
+    val staffList by viewModel.staffList.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var editingStaff by remember { mutableStateOf<StaffEntity?>(null) }
 
@@ -44,13 +45,27 @@ fun StaffMasterScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "戻る")
                     }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        // 新規追加用の空データ
+                        editingStaff = StaffEntity(
+                            id = 0,
+                            name = "",
+                            kana = "",
+                            isActive = true
+                        )
+                        showDialog = true
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "追加")
+                    }
                 }
             )
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             LazyColumn {
-                items(staffList) { staff: StaffEntity ->   // ★ 型を明示
+                items(staffList) { staff: StaffEntity ->
                     ListItem(
                         headlineContent = {
                             Text(
@@ -70,10 +85,9 @@ fun StaffMasterScreen(
                             showDialog = true
                         }
                     )
-                    HorizontalDivider() // ★ Divider() → HorizontalDivider()
+                    HorizontalDivider()
                 }
             }
-
         }
     }
 
@@ -82,7 +96,11 @@ fun StaffMasterScreen(
             staff = editingStaff!!,
             onDismiss = { showDialog = false },
             onSave = { updated ->
-                viewModel.updateStaff(updated) // ✅ 正しい関数名
+                if (updated.id == 0L) {
+                    viewModel.addStaff(updated.name, updated.kana)
+                } else {
+                    viewModel.updateStaff(updated) // 更新
+                }
                 showDialog = false
             }
         )
@@ -90,64 +108,65 @@ fun StaffMasterScreen(
 }
 
 
-@Composable
-fun EditStaffDialog(
-    staff: StaffEntity,
-    onDismiss: () -> Unit,
-    onSave: (StaffEntity) -> Unit
-) {
-    var name by remember { mutableStateOf(staff.name) }
-    var kana by remember { mutableStateOf(staff.kana ?: "") }
-    var isActive by remember { mutableStateOf(staff.isActive) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("スタッフ編集") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("名前") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
-                )
-                OutlinedTextField(
-                    value = kana,
-                    onValueChange = { kana = it },
-                    label = { Text("かな") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Checkbox(
-                        checked = isActive,
-                        onCheckedChange = { isActive = it }
-                    )
-                    Text("有効", modifier = Modifier.padding(start = 4.dp))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onSave(
-                    staff.copy(
-                        name = name,
-                        kana = kana,
-                        isActive = isActive
-                    )
-                )
-            }) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("キャンセル")
-            }
-        }
-    )
-}
+//@Composable
+//fun EditStaffDialog(
+//    staff: StaffEntity,
+//    onDismiss: () -> Unit,
+//    onSave: (StaffEntity) -> Unit
+//) {
+//    var name by remember { mutableStateOf(staff.name) }
+//    var kana by remember { mutableStateOf(staff.kana ?: "") }
+//    var isActive by remember { mutableStateOf(staff.isActive) }
+//
+//    AlertDialog(
+//        onDismissRequest = onDismiss,
+//        title = { Text("スタッフ編集") },
+//        text = {
+//            Column {
+//                OutlinedTextField(
+//                    value = name,
+//                    onValueChange = { name = it },
+//                    label = { Text("名前") },
+//                    modifier = Modifier.fillMaxWidth(),
+//                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
+//                )
+//                OutlinedTextField(
+//                    value = kana,
+//                    onValueChange = { kana = it },
+//                    label = { Text("かな") },
+//                    modifier = Modifier.fillMaxWidth(),
+//                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
+//                )
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    modifier = Modifier.padding(top = 8.dp)
+//                ) {
+//                    Checkbox(
+//                        checked = isActive,
+//                        onCheckedChange = { isActive = it }
+//                    )
+//                    Text("有効", modifier = Modifier.padding(start = 4.dp))
+//                }
+//            }
+//        },
+//        confirmButton = {
+//            TextButton(onClick = {
+//                onSave(
+//                    staff.copy(
+//                        name = name,
+//                        kana = kana,
+//                        isActive = isActive
+//                    )
+//                )
+//            }) {
+//                Text("保存")
+//            }
+//        },
+//        dismissButton = {
+//            TextButton(onClick = onDismiss) {
+//                Text("キャンセル")
+//            }
+//        }
+//    )
+//}

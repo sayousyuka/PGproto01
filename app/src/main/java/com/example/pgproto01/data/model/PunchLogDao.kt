@@ -13,7 +13,7 @@ interface PunchLogDao {
     suspend fun delete(log: PunchLog)  // ✅ これを追加！
 
     @Query("SELECT * FROM punch_logs WHERE staffId = :staffId ORDER BY timestamp")
-    fun getByStaffId(staffId: String): Flow<List<PunchLog>>  // ← Stringに変更
+    fun getByStaffId(staffId: Long): Flow<List<PunchLog>>  // ← Stringに変更
 
 
     @Query("DELETE FROM punch_logs")

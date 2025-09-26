@@ -62,13 +62,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 //import com.example.pgproto01.ui.SettingsScreen
 import com.example.pgproto01.ui.StaffMasterScreen
+import com.example.pgproto01.viewmodel.StaffViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+// imports
+
+import com.example.pgproto01.data.model.StaffEntity
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 
 
-data class Staff(
-    val id: String = UUID.randomUUID().toString(),
-    val name: String
-)
+
+//data class Staff(
+//    val id: String = UUID.randomUUID().toString(),
+//    val name: String
+//)
 
 data class DailyAttendance(
     val date: LocalDate,
@@ -99,7 +109,7 @@ fun convertRecordsToDaily(records: List<AttendanceRecord>): List<DailyAttendance
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MonthlyPager(
-    staffId: String,
+    staffId: Long,
     punchLogViewModel: PunchLogViewModel,
     records: List<AttendanceRecord>,
     onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
@@ -154,7 +164,7 @@ fun buildFullMonthDaily(records: List<AttendanceRecord>, yearMonth: YearMonth): 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MonthlyAttendanceTable(staffId: String,
+fun MonthlyAttendanceTable(staffId: Long,
                            dailyRecords: List<DailyAttendance>,
                            punchLogViewModel: PunchLogViewModel,
                            onManualPunchRequested: (LocalDate, PunchType) -> Unit) {
@@ -308,22 +318,22 @@ data class AttendanceRecord(
     val timestamp: LocalDateTime,
     val type: PunchType
 )
-
-// スタッフ一覧だけ管理する
-object InMemoryRepository {
-    val staffList = mutableStateListOf(
-        Staff(id = "1", name = "山田 太郎"),
-        Staff(id = "2", name = "佐藤 花子"),
-        Staff(id = "3", name = "鈴木 次郎"),
-        Staff(id = "4", name = "田中 三郎"),
-        Staff(id = "5", name = "中村 四季"),
-        Staff(id = "6", name = "高橋 桜"),
-    )
-
-    // 余計なものは削除！記録はDBに任せる
-    fun findStaff(staffId: String): Staff? =
-        staffList.find { it.id == staffId }
-}
+//
+//// スタッフ一覧だけ管理する
+//object InMemoryRepository {
+//    val staffList = mutableStateListOf(
+//        Staff(id = "1", name = "山田 太郎"),
+//        Staff(id = "2", name = "佐藤 花子"),
+//        Staff(id = "3", name = "鈴木 次郎"),
+//        Staff(id = "4", name = "田中 三郎"),
+//        Staff(id = "5", name = "中村 四季"),
+//        Staff(id = "6", name = "高橋 桜"),
+//    )
+//
+//    // 余計なものは削除！記録はDBに任せる
+//    fun findStaff(staffId: String): Staff? =
+//        staffList.find { it.id == staffId }
+//}
 
 
 class MainActivity : ComponentActivity() {
@@ -345,8 +355,11 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
     MaterialTheme {
         NavHost(navController = navController, startDestination = "home") {
             composable("home") {
+                val staffViewModel: StaffViewModel = viewModel()
+                val activeStaff by staffViewModel.activeStaffList.collectAsState(initial = emptyList())
+
                 HomeScreen(
-                    staff = InMemoryRepository.staffList,
+                    staff = activeStaff,
                     onStaffClick = { staffId ->
                         navController.navigate("detail/$staffId")
                     },
@@ -355,9 +368,9 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
             }
             composable(
                 route = "detail/{staffId}",
-                arguments = listOf(navArgument("staffId") { type = NavType.StringType })
+                arguments = listOf(navArgument("staffId") { type = NavType.LongType })
             ) { backStackEntry ->
-                val staffId = backStackEntry.arguments?.getString("staffId")!!
+                val staffId = backStackEntry.arguments?.getLong("staffId")!!
                 StaffDetailScreen(
                     staffId = staffId,
                     punchLogViewModel = punchLogViewModel, // ← 渡す
@@ -381,8 +394,8 @@ fun AttendanceApp(punchLogViewModel: PunchLogViewModel) { // ← ★引数を追
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    staff: List<Staff>,
-    onStaffClick: (String) -> Unit,
+    staff: List<StaffEntity>,            // ← Staff → StaffEntity
+    onStaffClick: (Long) -> Unit,        // ← String → Long
     onSettingsClick: () -> Unit // ← 引数追加
 ) {
     var now by remember { mutableStateOf(LocalDateTime.now()) }
@@ -489,7 +502,7 @@ fun StaffCard(
 
 @Composable
 fun StaffDetailScreen(
-    staffId: String,
+    staffId: Long,
     punchLogViewModel: PunchLogViewModel, // ← 追加
     onBack: () -> Unit,
     onPunched: () -> Unit
@@ -497,18 +510,15 @@ fun StaffDetailScreen(
 //    val punchLogViewModel: PunchLogViewModel = viewModel()
     val scope = rememberCoroutineScope()
     var punchDone by remember { mutableStateOf(false) }
-    val staff = remember(staffId) { InMemoryRepository.findStaff(staffId) }
+    val staffViewModel: StaffViewModel = viewModel()
+    val allStaff by staffViewModel.staffList.collectAsState(initial = emptyList())
+    val staff = allStaff.firstOrNull { it.id == staffId }
+
 //    val staffLongId = staffId.toLongOrNull() ?: return // staffId が不正なら早期リターン
     val logs: List<PunchLog> by punchLogViewModel
         .getPunchLogsForStaff(staffId)  // ← 直接渡せる
         .collectAsState(initial = emptyList())
 
-//    val records = logs.map {
-//        AttendanceRecord(
-//            timestamp = LocalDateTime.parse("${it.date}T${it.time}"),
-//            type = PunchType.valueOf(it.type)
-//        )
-//    }
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
     val records = logs.map {

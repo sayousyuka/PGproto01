@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardOptions
 import com.example.pgproto01.data.model.StaffEntity
+import androidx.compose.ui.unit.dp
+
 
 @Composable
 fun EditStaffDialog(

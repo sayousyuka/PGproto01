@@ -54,7 +54,7 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ✅ 手動打刻の保存
-    fun insertManualPunch(staffId: String, dateTime: LocalDateTime, type: PunchType, comment: String) {
+    fun insertManualPunch(staffId: Long, dateTime: LocalDateTime, type: PunchType, comment: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val log = PunchLog(
                 staffId = staffId,
@@ -89,15 +89,15 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun getPunchLogsForStaff(staffId: String): Flow<List<PunchLog>> {
+    fun getPunchLogsForStaff(staffId: Long): Flow<List<PunchLog>> {
         return punchLogDao.getByStaffId(staffId)
     }
     // Flow を State に変換して UI で監視
-    fun getCommentForDay(staffId: String, date: LocalDate): Flow<DailyComment?> {
+    fun getCommentForDay(staffId: Long, date: LocalDate): Flow<DailyComment?> {
         return dailyCommentDao.getCommentForDay(staffId, date.toString())
     }
 
-    fun setComment(staffId: String, date: LocalDate, text: String) {
+    fun setComment(staffId: Long, date: LocalDate, text: String) {
         viewModelScope.launch(Dispatchers.IO) {
             dailyCommentDao.insert(
                 DailyComment(staffId, date.toString(), text)

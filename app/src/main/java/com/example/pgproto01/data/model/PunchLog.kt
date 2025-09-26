@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "punch_logs")
 data class PunchLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val staffId: String,        // UUIDベース → StringのままでOK
+    val staffId: Long,        // UUIDベース → StringのままでOK
     val timestamp: Long,        // ← date + time をまとめて Long に
     val type: String,           // "IN", "OUT" など
     val isManual: Boolean = false,
