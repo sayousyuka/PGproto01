@@ -94,13 +94,13 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
     }
     // Flow を State に変換して UI で監視
     fun getCommentForDay(staffId: Long, date: LocalDate): Flow<DailyComment?> {
-        return dailyCommentDao.getCommentForDay(staffId, date.toString())
+        return dailyCommentDao.getCommentForDay(staffId.toString(), date.toString())
     }
 
     fun setComment(staffId: Long, date: LocalDate, text: String) {
         viewModelScope.launch(Dispatchers.IO) {
             dailyCommentDao.insert(
-                DailyComment(staffId, date.toString(), text)
+                DailyComment(staffId.toString(), date.toString(), text)
             )
         }
     }
