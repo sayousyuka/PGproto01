@@ -544,74 +544,93 @@ fun StaffDetailScreen(
     var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
 
     val status = getTodayStatus(logs)
-
-    val canClockIn = !status.hasClockIn
-    val canGoOut = status.hasClockIn && !status.hasGoOut
-    val canReturn = status.hasGoOut && !status.hasReturn
-    val canClockOut = status.hasClockIn && !status.hasClockOut  // ← ここを修正
+    val canClockIn = true
+    val canGoOut = true
+    val canReturn = true
+    val canClockOut = true
+//    val canClockIn = !status.hasClockIn
+//    val canGoOut = status.hasClockIn && !status.hasGoOut
+//    val canReturn = status.hasGoOut && !status.hasReturn
+//    val canClockOut = status.hasClockIn && !status.hasClockOut  // ← ここを修正
 
 //    var pendingType by remember { mutableStateOf<PunchType?>(null) }
     var missingPunches by remember { mutableStateOf<List<PunchType>>(emptyList()) }
     var showManualDialog by remember { mutableStateOf(false) }
 
 
-
     fun requestPunch(type: PunchType) {
         if (!punchEnabled) return
 
-        val status = getTodayStatus(logs)
+        // 🔽 今日のログから足りない打刻を判定
+        val missing = punchLogViewModel.getMissingPunchesForType(logs, type)
 
-        when (type) {
-            PunchType.IN -> {
-                if (status.hasClockIn) return // すでに出勤済みなら無視
-                punchLogViewModel.updatePendingType(PunchType.IN)
-                punchLogViewModel.updateMissingPunches(emptyList())
-                punchLogViewModel.updateShowManualDialog(true)
-            }
-            PunchType.BREAK_OUT -> {
-                if (!status.hasClockIn) {
-                    // 出勤がないので出勤を手動入力 → 外出は現在時刻で補完
-                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
-                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
-                    punchLogViewModel.updateShowManualDialog(true)
-                } else {
-                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
-                    punchLogViewModel.updateMissingPunches(emptyList())
-                    punchLogViewModel.updateShowManualDialog(true)
-                }
-            }
-            PunchType.BREAK_IN -> {
-                if (!status.hasClockIn && !status.hasGoOut) {
-                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
-                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN, PunchType.BREAK_OUT))
-                    punchLogViewModel.updateShowManualDialog(true)
-                } else if (!status.hasGoOut) {
-                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
-                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_OUT))
-                    punchLogViewModel.updateShowManualDialog(true)
-                } else {
-                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
-                    punchLogViewModel.updateMissingPunches(emptyList())
-                    punchLogViewModel.updateShowManualDialog(true)
-                }
-            }
-            PunchType.OUT -> {
-                if (!status.hasClockIn) {
-                    punchLogViewModel.updatePendingType(PunchType.OUT)
-                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
-                    punchLogViewModel.updateShowManualDialog(true)
-                } else if (status.hasGoOut && !status.hasReturn) {
-                    punchLogViewModel.updatePendingType(PunchType.OUT)
-                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_IN))
-                    punchLogViewModel.updateShowManualDialog(true)
-                } else {
-                    punchLogViewModel.updatePendingType(PunchType.OUT)
-                    punchLogViewModel.updateMissingPunches(emptyList())
-                    punchLogViewModel.updateShowManualDialog(true)
-                }
-            }
+        if (missing.isNotEmpty()) {
+            punchLogViewModel.updateMissingPunches(missing)
+            punchLogViewModel.updatePendingType(type)
+            punchLogViewModel.updateShowManualDialog(true)
+        } else {
+            // 🔽 通常の即時打刻（確認アラート表示）
+            punchLogViewModel.updatePendingType(type)
+            showDialog = true
         }
     }
+
+//    fun requestPunch(type: PunchType) {
+//        if (!punchEnabled) return
+//
+//        val status = getTodayStatus(logs)
+//
+//        when (type) {
+//            PunchType.IN -> {
+//                if (status.hasClockIn) return // すでに出勤済みなら無視
+//                punchLogViewModel.updatePendingType(PunchType.IN)
+//                punchLogViewModel.updateMissingPunches(emptyList())
+//                punchLogViewModel.updateShowManualDialog(true)
+//            }
+//            PunchType.BREAK_OUT -> {
+//                if (!status.hasClockIn) {
+//                    // 出勤がないので出勤を手動入力 → 外出は現在時刻で補完
+//                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
+//                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                } else {
+//                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
+//                    punchLogViewModel.updateMissingPunches(emptyList())
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                }
+//            }
+//            PunchType.BREAK_IN -> {
+//                if (!status.hasClockIn && !status.hasGoOut) {
+//                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+//                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN, PunchType.BREAK_OUT))
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                } else if (!status.hasGoOut) {
+//                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+//                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_OUT))
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                } else {
+//                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+//                    punchLogViewModel.updateMissingPunches(emptyList())
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                }
+//            }
+//            PunchType.OUT -> {
+//                if (!status.hasClockIn) {
+//                    punchLogViewModel.updatePendingType(PunchType.OUT)
+//                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                } else if (status.hasGoOut && !status.hasReturn) {
+//                    punchLogViewModel.updatePendingType(PunchType.OUT)
+//                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_IN))
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                } else {
+//                    punchLogViewModel.updatePendingType(PunchType.OUT)
+//                    punchLogViewModel.updateMissingPunches(emptyList())
+//                    punchLogViewModel.updateShowManualDialog(true)
+//                }
+//            }
+//        }
+//    }
 
 
     Scaffold(

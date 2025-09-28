@@ -139,5 +139,30 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun getMissingPunchesForType(
+        logs: List<PunchLog>,
+        type: PunchType
+    ): List<PunchType> {
+        val typesToday = logs.map { it.type }.toSet()
+
+        return when (type) {
+            PunchType.IN -> emptyList()  // 出勤なら補完不要
+            PunchType.BREAK_OUT -> if (!typesToday.contains(PunchType.IN.name)) listOf(PunchType.IN) else emptyList()
+            PunchType.BREAK_IN -> {
+                val missing = mutableListOf<PunchType>()
+                if (!typesToday.contains(PunchType.IN.name)) missing.add(PunchType.IN)
+                if (!typesToday.contains(PunchType.BREAK_OUT.name)) missing.add(PunchType.BREAK_OUT)
+                missing
+            }
+            PunchType.OUT -> {
+                val missing = mutableListOf<PunchType>()
+                if (!typesToday.contains(PunchType.IN.name)) missing.add(PunchType.IN)
+                if (typesToday.contains(PunchType.BREAK_OUT.name) && !typesToday.contains(PunchType.BREAK_IN.name)) {
+                    missing.add(PunchType.BREAK_IN)
+                }
+                missing
+            }
+        }
+    }
 
 }
