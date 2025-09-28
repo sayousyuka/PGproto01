@@ -543,15 +543,76 @@ fun StaffDetailScreen(
     var manualDialogDate by remember { mutableStateOf<LocalDate?>(null) }
     var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
 
+    val status = getTodayStatus(logs)
 
+    val canClockIn = !status.hasClockIn
+    val canGoOut = status.hasClockIn && !status.hasGoOut
+    val canReturn = status.hasGoOut && !status.hasReturn
+    val canClockOut = status.hasClockIn && !status.hasClockOut  // ← ここを修正
+
+//    var pendingType by remember { mutableStateOf<PunchType?>(null) }
+    var missingPunches by remember { mutableStateOf<List<PunchType>>(emptyList()) }
+    var showManualDialog by remember { mutableStateOf(false) }
 
 
 
     fun requestPunch(type: PunchType) {
         if (!punchEnabled) return
-        punchLogViewModel.updatePendingType(type)
-        showDialog = true
+
+        val status = getTodayStatus(logs)
+
+        when (type) {
+            PunchType.IN -> {
+                if (status.hasClockIn) return // すでに出勤済みなら無視
+                punchLogViewModel.updatePendingType(PunchType.IN)
+                punchLogViewModel.updateMissingPunches(emptyList())
+                punchLogViewModel.updateShowManualDialog(true)
+            }
+            PunchType.BREAK_OUT -> {
+                if (!status.hasClockIn) {
+                    // 出勤がないので出勤を手動入力 → 外出は現在時刻で補完
+                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
+                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
+                    punchLogViewModel.updateShowManualDialog(true)
+                } else {
+                    punchLogViewModel.updatePendingType(PunchType.BREAK_OUT)
+                    punchLogViewModel.updateMissingPunches(emptyList())
+                    punchLogViewModel.updateShowManualDialog(true)
+                }
+            }
+            PunchType.BREAK_IN -> {
+                if (!status.hasClockIn && !status.hasGoOut) {
+                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN, PunchType.BREAK_OUT))
+                    punchLogViewModel.updateShowManualDialog(true)
+                } else if (!status.hasGoOut) {
+                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_OUT))
+                    punchLogViewModel.updateShowManualDialog(true)
+                } else {
+                    punchLogViewModel.updatePendingType(PunchType.BREAK_IN)
+                    punchLogViewModel.updateMissingPunches(emptyList())
+                    punchLogViewModel.updateShowManualDialog(true)
+                }
+            }
+            PunchType.OUT -> {
+                if (!status.hasClockIn) {
+                    punchLogViewModel.updatePendingType(PunchType.OUT)
+                    punchLogViewModel.updateMissingPunches(listOf(PunchType.IN))
+                    punchLogViewModel.updateShowManualDialog(true)
+                } else if (status.hasGoOut && !status.hasReturn) {
+                    punchLogViewModel.updatePendingType(PunchType.OUT)
+                    punchLogViewModel.updateMissingPunches(listOf(PunchType.BREAK_IN))
+                    punchLogViewModel.updateShowManualDialog(true)
+                } else {
+                    punchLogViewModel.updatePendingType(PunchType.OUT)
+                    punchLogViewModel.updateMissingPunches(emptyList())
+                    punchLogViewModel.updateShowManualDialog(true)
+                }
+            }
+        }
     }
+
 
     Scaffold(
         bottomBar = {
@@ -590,13 +651,13 @@ fun StaffDetailScreen(
             ) {
                 Button(
                     modifier = Modifier.weight(1f),
-                    enabled = punchEnabled,
+                    enabled = canClockIn,
                     onClick = { requestPunch(PunchType.IN) }
                 ) { Text("出勤") }
 
                 Button(
                     modifier = Modifier.weight(1f),
-                    enabled = punchEnabled,
+                    enabled = canGoOut,
                     onClick = { requestPunch(PunchType.BREAK_OUT) }
                 ) { Text("外出") }
             }
@@ -611,13 +672,13 @@ fun StaffDetailScreen(
             ) {
                 Button(
                     modifier = Modifier.weight(1f),
-                    enabled = punchEnabled,
+                    enabled = canReturn,
                     onClick = { requestPunch(PunchType.BREAK_IN) }
                 ) { Text("戻り") }
 
                 Button(
                     modifier = Modifier.weight(1f),
-                    enabled = punchEnabled,
+                    enabled = canClockOut,
                     onClick = { requestPunch(PunchType.OUT) }
                 ) { Text("退勤") }
             }
@@ -655,6 +716,16 @@ fun StaffDetailScreen(
 
 
         }
+    }
+    if (punchLogViewModel.showManualDialog) {
+        staff?.let {
+            ManualPunchDialog(
+                viewModel = punchLogViewModel,
+                staffId = it.id.toString(),
+                onDismiss = { punchLogViewModel.updateShowManualDialog(false) }
+            )
+        }
+
     }
 
     if (showDialog && staff != null && pendingType != null) {
@@ -721,35 +792,60 @@ fun StaffDetailScreen(
         )
     }
     // 🔽 手動打刻ダイアログを表示
-    if (manualDialogVisible && manualDialogDate != null && manualDialogType != null) {
-        ManualPunchDialog(
-            date = manualDialogDate!!,
-            punchType = manualDialogType!!,
-            onDismiss = {
-                manualDialogVisible = false
-            },
-            onSave = { dateTime, comment ->
+//    if (manualDialogVisible && manualDialogDate != null && manualDialogType != null) {
+//        ManualPunchDialog(
+//            date = manualDialogDate!!,
+//            punchType = manualDialogType!!,
+//            onDismiss = {
+//                manualDialogVisible = false
+//            },
+//            onSave = { dateTime, comment ->
+//
+//                if (manualDialogType != null) {
+//                    val epoch = dateTime.atZone(ZoneId.systemDefault()).toEpochSecond()
+//
+//                    val punchLog = PunchLog(
+//                        staffId = staffId,
+//                        timestamp = epoch,       // ← Longで保存
+//                        type = manualDialogType!!.name,
+//                        isManual = true,
+//                        comment = comment        // ← コメントがあるならここに
+//                    )
+//                    punchLogViewModel.insert(punchLog)
+//
+//
+//                }
+//
+//
+//                manualDialogVisible = false
+//            }
+//        )
+//    }
 
-                if (manualDialogType != null) {
-                    val epoch = dateTime.atZone(ZoneId.systemDefault()).toEpochSecond()
-
-                    val punchLog = PunchLog(
-                        staffId = staffId,
-                        timestamp = epoch,       // ← Longで保存
-                        type = manualDialogType!!.name,
-                        isManual = true,
-                        comment = comment        // ← コメントがあるならここに
-                    )
-                    punchLogViewModel.insert(punchLog)
 
 
-                }
+}
+// StaffDetailScreen.kt の中、例えば末尾などに以下を追加してください：
+data class TodayPunchStatus(
+    val hasClockIn: Boolean,
+    val hasGoOut: Boolean,
+    val hasReturn: Boolean,
+    val hasClockOut: Boolean
+)
 
-
-                manualDialogVisible = false
-            }
-        )
+fun getTodayStatus(logs: List<PunchLog>): TodayPunchStatus {
+    val today = LocalDate.now()
+    val todayLogs = logs.filter {
+        val date = Instant.ofEpochSecond(it.timestamp)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        date == today
     }
 
-
+    return TodayPunchStatus(
+        hasClockIn = todayLogs.any { it.type == PunchType.IN.name },
+        hasGoOut = todayLogs.any { it.type == PunchType.BREAK_OUT.name },
+        hasReturn = todayLogs.any { it.type == PunchType.BREAK_IN.name },
+        hasClockOut = todayLogs.any { it.type == PunchType.OUT.name }
+    )
 }

@@ -12,69 +12,81 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import com.example.pgproto01.data.model.PunchType  // ✅ 修正済み
+import com.example.pgproto01.viewmodel.PunchLogViewModel
+import com.example.pgproto01.data.model.PunchLog
 
 @Composable
 fun ManualPunchDialog(
-    date: LocalDate,
-    punchType: PunchType, // あなたの定義に応じて
-    onDismiss: () -> Unit,
-    onSave: (LocalDateTime, String) -> Unit
+    viewModel: PunchLogViewModel,
+    staffId: String,
+    onDismiss: () -> Unit
 ) {
-    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
-    var comment by remember { mutableStateOf("") }
-    var showTimePicker by remember { mutableStateOf(false) }
+    val missingPunches = viewModel.missingPunches
+    val pendingType = viewModel.pendingType
 
-    // ↓ TimePickerDialog を表示
-    if (showTimePicker) {
-        val context = LocalContext.current
-        TimePickerDialog(
-            context,
-            { _, hour: Int, minute: Int ->
-                selectedTime = LocalTime.of(hour, minute)
-                showTimePicker = false
-            },
-            selectedTime.hour,
-            selectedTime.minute,
-            true // 24時間表記
-        ).show()
-    }
+    val today = LocalDate.now()
+    val now = LocalTime.now()
+    val timeMap = remember { mutableStateMapOf<PunchType, LocalTime>() }
 
-    // ↓ AlertDialog 本体
+    // UI本体
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("手動打刻の追加") },
+        title = { Text("順序違反の補完打刻") },
         text = {
             Column {
-                Text("日付: ${date.format(DateTimeFormatter.ofPattern("MM/dd"))}")
-                Text("区分: ${punchType.displayName()}")
+                Text("不足している打刻があります。手動で入力してください。")
                 Spacer(Modifier.height(8.dp))
 
-                // ✅ 選択式ボタンで時刻入力
-                OutlinedButton(
-                    onClick = { showTimePicker = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("時刻を選択: ${selectedTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+                for (type in missingPunches) {
+                    val label = when (type) {
+                        PunchType.IN -> "出勤時刻"
+                        PunchType.BREAK_OUT -> "外出時刻"
+                        PunchType.BREAK_IN -> "戻り時刻"
+                        PunchType.OUT -> "退勤時刻"
+                    }
+
+                    TimePickerField(
+                        label = label,
+                        initialTime = timeMap[type] ?: now,
+                        onTimeSelected = { timeMap[type] = it }
+                    )
+                    Spacer(Modifier.height(4.dp))
                 }
-
-                Spacer(Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = comment,
-                    onValueChange = { comment = it },
-                    label = { Text("コメント") },
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val dateTime = LocalDateTime.of(date, selectedTime)
-                onSave(dateTime, comment)
+                // ① 補完打刻（手動）
+                for (type in missingPunches) {
+                    val selectedTime = timeMap[type] ?: now
+                    viewModel.insertPunchLog(
+                        staffId = staffId.toLong(),
+                        type = type,
+                        timestamp = LocalDateTime.of(today, selectedTime),
+                        isManual = true
+                    )
+                }
+
+                // ② pendingTypeを現在時刻で自動打刻
+                if (pendingType != null) {
+                    viewModel.insertPunchLog(
+                        staffId = staffId.toLong(),
+                        type = pendingType,
+                        timestamp = LocalDateTime.of(today, now),
+                        isManual = false
+                    )
+                }
+
+                // 状態リセット
+                viewModel.updatePendingType(null)
+                viewModel.updateMissingPunches(emptyList())
+                viewModel.updateShowManualDialog(false)
+                onDismiss()
             }) {
-                Text("保存")
+                Text("確定")
             }
-        },
+        }
+        ,
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("キャンセル")
@@ -82,3 +94,25 @@ fun ManualPunchDialog(
         }
     )
 }
+@Composable
+fun TimePickerField(
+    label: String,
+    initialTime: LocalTime,
+    onTimeSelected: (LocalTime) -> Unit
+) {
+    var timeText by remember { mutableStateOf(initialTime.format(DateTimeFormatter.ofPattern("HH:mm"))) }
+
+    OutlinedTextField(
+        value = timeText,
+        onValueChange = {
+            timeText = it
+            runCatching {
+                val parsed = LocalTime.parse(it, DateTimeFormatter.ofPattern("HH:mm"))
+                onTimeSelected(parsed)
+            }
+        },
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+

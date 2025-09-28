@@ -15,12 +15,16 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.example.pgproto01.data.model.DailyComment
+import java.time.format.DateTimeFormatter // ← これを追加
 
 
 class PunchLogViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
     private val punchLogDao = db.punchLogDao()
     private val dailyCommentDao = db.dailyCommentDao()
+
+    private val _missingPunches = mutableStateOf<List<PunchType>>(emptyList())
+    val missingPunches: List<PunchType> get() = _missingPunches.value
 
     // ✅ ダイアログ制御用ステート
     var isManualDialogVisible by mutableStateOf(false)
@@ -104,4 +108,36 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
             )
         }
     }
+    fun updateMissingPunches(missing: List<PunchType>) {
+        _missingPunches.value = missing
+    }
+
+    private val _showManualDialog = mutableStateOf(false)
+    val showManualDialog: Boolean get() = _showManualDialog.value
+
+    fun updateShowManualDialog(show: Boolean) {
+        _showManualDialog.value = show
+    }
+    fun insertPunchLog(
+        staffId: Long,
+        type: PunchType,
+        timestamp: LocalDateTime,
+        isManual: Boolean = false
+    ) {
+        val log = PunchLog(
+            staffId = staffId,
+            timestamp = timestamp.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            type = type.name,
+            isManual = isManual,
+            isDeleted = false,
+            comment = null,
+            createdAt = System.currentTimeMillis()
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            punchLogDao.insert(log)
+        }
+    }
+
+
 }
