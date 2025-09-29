@@ -522,9 +522,10 @@ fun StaffDetailScreen(
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
     val records = logs.map {
-        val dateTime = Instant.ofEpochSecond(it.timestamp)
+        val dateTime = Instant.ofEpochMilli(it.timestamp)
             .atZone(ZoneId.systemDefault())
             .toLocalDateTime()
+
 
         AttendanceRecord(
             timestamp = dateTime,
@@ -548,6 +549,7 @@ fun StaffDetailScreen(
     val canGoOut = true
     val canReturn = true
     val canClockOut = true
+//    打刻ボタンのずいじ表示切り替え機能↑↓ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 //    val canClockIn = !status.hasClockIn
 //    val canGoOut = status.hasClockIn && !status.hasGoOut
 //    val canReturn = status.hasGoOut && !status.hasReturn
@@ -770,11 +772,11 @@ fun StaffDetailScreen(
                                 }
 
                                 val now = LocalDateTime.now()
-                                val epoch = now.atZone(ZoneId.systemDefault()).toEpochSecond()
+                                val epochMilli = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
                                 val punchLog = PunchLog(
                                     staffId = staffId,
-                                    timestamp = epoch,
+                                    timestamp = epochMilli,
                                     type = type.name,
                                     isManual = false
                                 )

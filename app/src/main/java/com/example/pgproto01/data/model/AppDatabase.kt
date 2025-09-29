@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DailyComment::class,
         StaffEntity::class       // ← ★ 追加
     ],
-    version = 5, // ← 1つバージョンを上げる（今 3 なら 4 に）
+    version = 6, // ← 1つバージョンを上げる（今 3 なら 4 に）
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
