@@ -44,6 +44,7 @@ import com.example.pgproto01.viewmodel.PunchLogViewModel
 
 // ▼ ManualPunchDialog を定義済みなら、それを import
 import com.example.pgproto01.ui.component.ManualPunchDialog
+import com.example.pgproto01.ui.component.ManualPunchDialogSimple
  // パスは調整してください
 
 // ▼ PunchLogエンティティの参照
@@ -71,6 +72,7 @@ import com.example.pgproto01.data.model.StaffEntity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 
 
 
@@ -308,12 +310,12 @@ fun MonthlyAttendanceTable(staffId: Long,
 //    BREAK_IN,    // 戻り
 //    OUT          // 退勤
 //}
-//fun PunchType.displayName(): String = when (this) {
-//    PunchType.IN -> "出勤"
-//    PunchType.OUT -> "退勤"
-//    PunchType.BREAK_OUT -> "外出"
-//    PunchType.BREAK_IN -> "戻り"
-//}
+fun PunchType.displayName(): String = when (this) {
+    PunchType.IN -> "出勤"
+    PunchType.OUT -> "退勤"
+    PunchType.BREAK_OUT -> "外出"
+    PunchType.BREAK_IN -> "戻り"
+}
 data class AttendanceRecord(
     val timestamp: LocalDateTime,
     val type: PunchType
@@ -545,15 +547,15 @@ fun StaffDetailScreen(
     var manualDialogType by remember { mutableStateOf<PunchType?>(null) }
 
     val status = getTodayStatus(logs)
-    val canClockIn = true
-    val canGoOut = true
-    val canReturn = true
-    val canClockOut = true
+//    val canClockIn = true
+//    val canGoOut = true
+//    val canReturn = true
+//    val canClockOut = true
 //    打刻ボタンのずいじ表示切り替え機能↑↓ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
-//    val canClockIn = !status.hasClockIn
-//    val canGoOut = status.hasClockIn && !status.hasGoOut
-//    val canReturn = status.hasGoOut && !status.hasReturn
-//    val canClockOut = status.hasClockIn && !status.hasClockOut  // ← ここを修正
+    val canClockIn = !status.hasClockIn
+    val canGoOut = !status.hasGoOut
+    val canReturn = !status.hasReturn
+    val canClockOut = !status.hasClockOut  // ← ここを修正
 
 //    var pendingType by remember { mutableStateOf<PunchType?>(null) }
     var missingPunches by remember { mutableStateOf<List<PunchType>>(emptyList()) }
@@ -676,11 +678,23 @@ fun StaffDetailScreen(
                     onClick = { requestPunch(PunchType.IN) }
                 ) { Text("出勤") }
 
+//                Button(
+//                    modifier = Modifier.weight(1f),
+//                    enabled = canGoOut,
+//                    onClick = { requestPunch(PunchType.BREAK_OUT) }
+//                ) { Text("外出") }
                 Button(
                     modifier = Modifier.weight(1f),
                     enabled = canGoOut,
-                    onClick = { requestPunch(PunchType.BREAK_OUT) }
-                ) { Text("外出") }
+                    onClick = { requestPunch(PunchType.BREAK_OUT) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (status.hasClockIn) Color(0xFF4CAF50) else Color.Gray, // 出勤済みなら緑、未出勤ならグレー
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("外出")
+                }
+
             }
 
             Spacer(Modifier.height(8.dp))
@@ -694,13 +708,28 @@ fun StaffDetailScreen(
                 Button(
                     modifier = Modifier.weight(1f),
                     enabled = canReturn,
-                    onClick = { requestPunch(PunchType.BREAK_IN) }
+                    onClick = { requestPunch(PunchType.BREAK_IN) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (status.hasGoOut) Color(0xFF4CAF50) else Color.Gray,
+                        contentColor = Color.White
+                    )
+
                 ) { Text("戻り") }
 
                 Button(
                     modifier = Modifier.weight(1f),
                     enabled = canClockOut,
-                    onClick = { requestPunch(PunchType.OUT) }
+                    onClick = { requestPunch(PunchType.OUT) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (
+                            (status.hasClockIn && !status.hasGoOut) || status.hasReturn
+                        ) {
+                            Color(0xFF4CAF50) // 緑
+                        } else {
+                            Color.Gray // グレー
+                        },
+                        contentColor = Color.White
+                    )
                 ) { Text("退勤") }
             }
 
@@ -750,7 +779,7 @@ fun StaffDetailScreen(
     }
 
     if (showDialog && staff != null && pendingType != null) {
-        val label = if (pendingType == PunchType.IN) "出勤" else "退勤"
+//        val label = if (pendingType == PunchType.IN) "出勤" else "退勤"
         AlertDialog(
             onDismissRequest = { showDialog = false },
             confirmButton = {
@@ -809,39 +838,29 @@ fun StaffDetailScreen(
                 }) { Text("キャンセル") }
             },
             title = { Text("確認") },
-            text = { Text("${staff.name}さんの${label}を記録します。") }
+            text = { Text("${staff.name}さんの${pendingType.displayName()}を記録します。") }
         )
     }
-    // 🔽 手動打刻ダイアログを表示
-//    if (manualDialogVisible && manualDialogDate != null && manualDialogType != null) {
-//        ManualPunchDialog(
-//            date = manualDialogDate!!,
-//            punchType = manualDialogType!!,
-//            onDismiss = {
-//                manualDialogVisible = false
-//            },
-//            onSave = { dateTime, comment ->
-//
-//                if (manualDialogType != null) {
-//                    val epoch = dateTime.atZone(ZoneId.systemDefault()).toEpochSecond()
-//
-//                    val punchLog = PunchLog(
-//                        staffId = staffId,
-//                        timestamp = epoch,       // ← Longで保存
-//                        type = manualDialogType!!.name,
-//                        isManual = true,
-//                        comment = comment        // ← コメントがあるならここに
-//                    )
-//                    punchLogViewModel.insert(punchLog)
-//
-//
-//                }
-//
-//
-//                manualDialogVisible = false
-//            }
-//        )
-//    }
+//     🔽 手動打刻ダイアログを表示
+    if (manualDialogVisible && manualDialogDate != null && manualDialogType != null) {
+        ManualPunchDialogSimple(
+            date = manualDialogDate!!,
+            punchType = manualDialogType!!,
+            onDismiss = { manualDialogVisible = false },
+            onSave = { dateTime ->
+                val epoch = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val punchLog = PunchLog(
+                    staffId = staffId,
+                    timestamp = epoch,
+                    type = manualDialogType!!.name,
+                    isManual = true
+                )
+                punchLogViewModel.insert(punchLog)
+                manualDialogVisible = false
+            }
+        )
+    }
+
 
 
 
@@ -857,7 +876,7 @@ data class TodayPunchStatus(
 fun getTodayStatus(logs: List<PunchLog>): TodayPunchStatus {
     val today = LocalDate.now()
     val todayLogs = logs.filter {
-        val date = Instant.ofEpochSecond(it.timestamp)
+        val date = Instant.ofEpochMilli(it.timestamp)  // ← ここもミリ秒で変換
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
         date == today

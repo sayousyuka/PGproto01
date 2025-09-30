@@ -116,3 +116,50 @@ fun TimePickerField(
     )
 }
 
+@Composable
+fun ManualPunchDialogSimple(
+    date: LocalDate,
+    punchType: PunchType,
+    onDismiss: () -> Unit,
+    onSave: (LocalDateTime) -> Unit
+) {
+    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+    var timeText by remember { mutableStateOf(LocalTime.now().format(formatter)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${date} の ${punchType.displayName()} を入力") },
+        text = {
+            Column {
+                TextField(
+                    value = timeText,
+                    onValueChange = { input ->
+                        // HH:mm のみを許容
+                        if (input.matches(Regex("^\\d{0,2}:?\\d{0,2}\$"))) {
+                            timeText = input
+                        }
+                    },
+                    label = { Text("時刻 (HH:mm)") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val parsedTime = runCatching { LocalTime.parse(timeText, formatter) }.getOrNull()
+                if (parsedTime != null) {
+                    val dateTime = LocalDateTime.of(date, parsedTime)
+                    onSave(dateTime)
+                }
+                onDismiss()
+            }) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("キャンセル")
+            }
+        }
+    )
+}
