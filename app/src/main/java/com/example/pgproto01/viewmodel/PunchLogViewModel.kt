@@ -16,7 +16,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import com.example.pgproto01.data.model.DailyComment
 import java.time.format.DateTimeFormatter // ← これを追加
+import com.example.pgproto01.data.model.toRequest
+import com.example.pgproto01.data.remote.ApiClient
 
+import android.util.Log
 
 class PunchLogViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
@@ -136,6 +139,20 @@ class PunchLogViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch(Dispatchers.IO) {
             punchLogDao.insert(log)
+
+            // ✅ Lambda送信も追加
+            val request = log.toRequest()
+            val success = ApiClient.postAttendanceLog(
+                apiUrl = "https://mcd3aliox3.execute-api.ap-southeast-2.amazonaws.com/attendance",
+                log = request
+            )
+
+            if (success) {
+                Log.i("PunchLogViewModel", "✅ 勤怠ログ送信成功")
+            } else {
+                Log.e("PunchLogViewModel", "❌ 勤怠ログ送信失敗")
+            }
+
         }
     }
 

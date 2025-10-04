@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("kotlin-kapt") // ← これを必ず追加！
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10" // ← Kotlinのバージョンに合わせるv
 
 }
 
@@ -75,4 +76,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.4") // FragmentActivity 用
 
 
+    //API関連
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }

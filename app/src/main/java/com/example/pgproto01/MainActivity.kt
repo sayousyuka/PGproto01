@@ -553,8 +553,8 @@ fun StaffDetailScreen(
 //    val canClockOut = true
 //    打刻ボタンのずいじ表示切り替え機能↑↓ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
     val canClockIn = !status.hasClockIn
-    val canGoOut = !status.hasGoOut
-    val canReturn = !status.hasReturn
+    val canGoOut = !status.hasGoOut && !status.hasClockOut   // 退勤していない場合のみ外出可能
+    val canReturn = !status.hasReturn && !status.hasClockOut // 退勤していない場合のみ戻り可能
     val canClockOut = !status.hasClockOut  // ← ここを修正
 
 //    var pendingType by remember { mutableStateOf<PunchType?>(null) }
